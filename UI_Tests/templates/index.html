@@ -2,129 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gas Station Circuit</title>
-    <style>
-        input[type="number"] {
-            width: 60px; /* Smaller width for input boxes */
-            margin: 5px;
-        }
-    </style>
+</head>
+<body>
+    <h1>Gas Station Circuit Test Case</h1>
+    <div id="test-case">
+        <div class="test-case">
+            <h2>{{ test_case['comment'] }}</h2>
+            <form id="test-case-form" method="POST" action="/submit">
+                <label>Gas:</label>
+                {% for g in test_case['gas'] %}
+                    <input type="number" name="gas[]" value="{{ g }}">
+                {% endfor %}
+                <br>
+                <button type="button" onclick="addGasInput()">Add Gas</button>
+                <button type="button" onclick="removeGasInput()">Remove Gas</button>
+                <br>
+                <label>Cost:</label>
+                {% for c in test_case['cost'] %}
+                    <input type="number" name="cost[]" value="{{ c }}">
+                {% endfor %}
+                <br>
+                <button type="button" onclick="addCostInput()">Add Cost</button>
+                <button type="button" onclick="removeCostInput()">Remove Cost</button>
+                <br>
+                <label>Expected Result:</label>
+                <input type="number" name="expected" value="{{ test_case['expected'] }}">
+                <br>
+                <div id="result"></div>
+                <br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
     <script>
-        function addInput() {
-            const gasDiv = document.getElementById('gas-inputs');
-            const costDiv = document.getElementById('cost-inputs');
-
-            const newGasInput = document.createElement('input');
-            newGasInput.type = 'number';
-            newGasInput.name = 'gas[]';
-            gasDiv.appendChild(newGasInput);
-
-            const newCostInput = document.createElement('input');
-            newCostInput.type = 'number';
-            newCostInput.name = 'cost[]';
-            costDiv.appendChild(newCostInput);
+        function addGasInput() {
+            const gasContainer = document.getElementsByName('gas[]')[0].parentNode;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.name = 'gas[]';
+            input.value = '';
+            gasContainer.insertBefore(input, document.getElementsByTagName('button')[0]);
         }
 
-        function removeInput() {
-            const gasDiv = document.getElementById('gas-inputs');
-            const costDiv = document.getElementById('cost-inputs');
-
-            if (gasDiv.children.length > 1) {
-                gasDiv.removeChild(gasDiv.lastChild);
-                costDiv.removeChild(costDiv.lastChild);
+        function removeGasInput() {
+            const gasInputs = document.getElementsByName('gas[]');
+            if (gasInputs.length > 1) {
+                gasInputs[gasInputs.length - 1].remove();
             }
         }
 
-        function loadTestCase() {
-            const select = document.getElementById('test-case-select');
-            const index = select.value;
-            
-            fetch('/test_case/' + index)
+        function addCostInput() {
+            const costContainer = document.getElementsByName('cost[]')[0].parentNode;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.name = 'cost[]';
+            input.value = '';
+            costContainer.insertBefore(input, document.getElementsByTagName('button')[2]);
+        }
+
+        function removeCostInput() {
+            const costInputs = document.getElementsByName('cost[]');
+            if (costInputs.length > 1) {
+                costInputs[costInputs.length - 1].remove();
+            }
+        }
+
+        window.onload = function() {
+            const form = document.getElementById('test-case-form');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(form);
+                fetch('/submit', {
+                    method: 'POST',
+                    body: formData
+                })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        const gasDiv = document.getElementById('gas-inputs');
-                        const costDiv = document.getElementById('cost-inputs');
-                        const commentDiv = document.getElementById('test-case-comment');
-
-                        // Clear existing inputs
-                        while (gasDiv.firstChild) gasDiv.removeChild(gasDiv.firstChild);
-                        while (costDiv.firstChild) costDiv.removeChild(costDiv.firstChild);
-
-                        // Add new inputs
-                        const gasLabel = document.createElement('label');
-                        gasLabel.textContent = 'Gas:';
-                        gasDiv.appendChild(gasLabel);
-
-                        data.gas.forEach(value => {
-                            const newGasInput = document.createElement('input');
-                            newGasInput.type = 'number';
-                            newGasInput.name = 'gas[]';
-                            newGasInput.value = value;
-                            gasDiv.appendChild(newGasInput);
-                        });
-
-                        const costLabel = document.createElement('label');
-                        costLabel.textContent = 'Cost:';
-                        costDiv.appendChild(costLabel);
-
-                        data.cost.forEach(value => {
-                            const newCostInput = document.createElement('input');
-                            newCostInput.type = 'number';
-                            newCostInput.name = 'cost[]';
-                            newCostInput.value = value;
-                            costDiv.appendChild(newCostInput);
-                        });
-
-                        // Display comment
-                        commentDiv.textContent = data.comment;
-                    }
-                });
-        }
-    </script>
-</head>
-<body>
-    <h1>Gas Station Circuit</h1>
-    <div>
-        <label for="test-case-select">Select Test Case:</label>
-        <select id="test-case-select" onchange="loadTestCase()">
-            <option value="" disabled selected>Select a test case</option>
-            {% for index in range(test_cases|length) %}
-                <option value="{{ index }}">Test Case {{ index + 1 }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div id="test-case-comment"></div>
-    <form id="gas-cost-form" method="post" action="/solve">
-        <div id="gas-inputs">
-            <label>Gas:</label>
-            <input type="number" name="gas[]" required>
-        </div>
-        <div id="cost-inputs">
-            <label>Cost:</label>
-            <input type="number" name="cost[]" required>
-        </div>
-        <button type="button" onclick="addInput()">Add more</button>
-        <button type="button" onclick="removeInput()">Remove</button>
-        <button type="submit">Submit</button>
-    </form>
-    <div id="result"></div>
-    <script>
-        document.getElementById('gas-cost-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-
-            fetch('/solve', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('result').textContent = 'Result: ' + data.result;
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = `Result: ${data.result}`;
+                })
+                .catch(error => console.error('Error:', error));
             });
-        });
+        }
     </script>
 </body>
 </html>
